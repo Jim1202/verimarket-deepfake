@@ -17,7 +17,6 @@ def financial_risk_score(text):
     readability = textstat.flesch_reading_ease(text)
     complexity_score = 1 - max(min(readability / 100, 1), 0)
 
-    # Simple heuristic AI proxy
     ai_score = min((sensational_score * 1.2 + complexity_score * 0.8), 1)
 
     final_score = (
