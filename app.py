@@ -78,5 +78,3 @@ if st.button("Analyze"):
             st.warning("Manual review suggested.")
         else:
             st.success("Low probability of manipulation.")
-
-streamlit run app.py
