@@ -2,17 +2,30 @@ import streamlit as st
 from PIL import Image
 import torch
 from transformers import AutoImageProcessor, AutoModelForImageClassification
-import numpy as np
 import hashlib
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="VeriMarket AI Deepfake Engine", layout="wide")
+# -----------------------------
+# Page Config
+# -----------------------------
+st.set_page_config(
+    page_title="VeriMarket AI Deepfake Engine",
+    page_icon="🛡️",
+    layout="wide"
+)
 
 st.title("🛡️ VeriMarket AI Deepfake Detection Engine")
-st.markdown("Deepfake model trained on real vs fake image datasets.")
+st.markdown("""
+Deep Learning-based deepfake classifier trained on real vs fake image datasets.
+
+Hybrid Risk Infrastructure:
+- AI Classification Layer
+- Escalation Logic
+- Blockchain Evidence Anchoring
+""")
 
 # -----------------------------
-# Load Deepfake Model
+# Load Real Deepfake Model
 # -----------------------------
 @st.cache_resource
 def load_model():
@@ -48,12 +61,14 @@ def generate_hash(image):
     return hashlib.sha256(image.tobytes()).hexdigest()
 
 # -----------------------------
-# Risk Badge
+# STRICT Risk Badge Logic
 # -----------------------------
 def risk_badge(score):
-    if score > 0.75:
+    if score > 0.90:
+        return "🔴 VERY HIGH RISK"
+    elif score > 0.75:
         return "🔴 HIGH RISK"
-    elif score > 0.45:
+    elif score > 0.60:
         return "🟠 MEDIUM RISK"
     else:
         return "🟢 LOW RISK"
@@ -75,10 +90,15 @@ if uploaded_file:
     img_hash = generate_hash(image)
 
     with col2:
-        st.subheader("AI Deepfake Classification")
+        st.subheader("AI Classification Output")
+
         st.metric("Fake Probability", fake_prob)
         st.metric("Real Probability", real_prob)
+
         st.markdown(f"### {risk_badge(fake_prob)}")
+
+        if fake_prob > 0.65:
+            st.error("⚠ Escalate to Human Validator + Record On-Chain")
 
         st.subheader("Blockchain Evidence Hash")
         st.code(img_hash)
@@ -87,7 +107,17 @@ if uploaded_file:
     st.subheader("Probability Distribution")
     fig, ax = plt.subplots()
     ax.bar(["Real", "Fake"], [real_prob, fake_prob])
-    ax.set_ylim(0,1)
+    ax.set_ylim(0, 1)
+    ax.set_ylabel("Probability")
     st.pyplot(fig)
 
-st.caption("Model trained on deepfake datasets. Production version integrates oracle validation & DAO governance.")
+st.divider()
+
+st.caption("""
+MVP Model: Pretrained Deepfake Classifier.
+Production Architecture Integrates:
+- FaceForensics++ Fine-Tuning
+- GAN Fingerprint Detection
+- Oracle Verification Layer
+- DAO-Based Human Validation
+""")
