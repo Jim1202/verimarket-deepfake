@@ -9,30 +9,16 @@ import hashlib
 import matplotlib.pyplot as plt
 
 # -----------------------------
-# DARK THEME STYLING
+# Page Config
 # -----------------------------
-st.markdown("""
-<style>
-body {
-    background-color: #0E1117;
-    color: white;
-}
-.block-container {
-    background-color: #0E1117;
-}
-h1, h2, h3 {
-    color: #FFFFFF;
-}
-.stMetric {
-    background-color: #1C1F26;
-    padding: 10px;
-    border-radius: 10px;
-}
-</style>
-""", unsafe_allow_html=True)
+st.set_page_config(
+    page_title="VeriMarket Deepfake Intelligence",
+    page_icon="🛡️",
+    layout="wide"
+)
 
 # -----------------------------
-# Load Real CNN Backbone
+# Load CNN Backbone
 # -----------------------------
 @st.cache_resource
 def load_model():
@@ -41,8 +27,6 @@ def load_model():
     return model
 
 model = load_model()
-
-# Remove classifier head to extract embeddings
 feature_extractor = torch.nn.Sequential(*list(model.children())[:-1])
 
 transform = transforms.Compose([
@@ -51,7 +35,7 @@ transform = transforms.Compose([
 ])
 
 # -----------------------------
-# CNN Embedding Anomaly
+# CNN Embedding Score
 # -----------------------------
 def cnn_embedding_score(image):
     img_tensor = transform(image).unsqueeze(0)
@@ -62,7 +46,6 @@ def cnn_embedding_score(image):
     features = features.flatten()
     embedding_variance = torch.var(features).item()
 
-    # Lower variance often seen in synthetic smooth images
     score = 0
     if embedding_variance < 0.02:
         score += 0.4
@@ -72,7 +55,7 @@ def cnn_embedding_score(image):
     return score, embedding_variance
 
 # -----------------------------
-# Structural Forensic Layer
+# Structural Score
 # -----------------------------
 def structural_score(image):
     img_array = np.array(image)
@@ -125,37 +108,74 @@ def generate_hash(image):
     return hashlib.sha256(image.tobytes()).hexdigest()
 
 # -----------------------------
-# UI
+# Risk Badge
 # -----------------------------
-st.title("🛡 VeriMarket Deepfake Intelligence Engine")
-st.markdown("Real CNN + Forensic Hybrid Detection System")
+def risk_badge(score):
+    if score > 0.75:
+        return "🔴 HIGH RISK"
+    elif score > 0.45:
+        return "🟠 MEDIUM RISK"
+    else:
+        return "🟢 LOW RISK"
 
-uploaded_file = st.file_uploader("Upload Image", type=["jpg","jpeg","png"])
+# -----------------------------
+# UI Layout
+# -----------------------------
+st.title("🛡️ VeriMarket Deepfake Intelligence Engine")
+st.markdown("""
+Hybrid AI Deepfake Detection System combining:
+
+- Convolutional Neural Network feature extraction  
+- Structural forensic analysis  
+- Frequency-domain anomaly detection  
+- Blockchain-ready evidence hashing  
+""")
+
+st.divider()
+
+uploaded_file = st.file_uploader("Upload Image for Analysis", type=["jpg","jpeg","png"])
 
 if uploaded_file:
     image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, use_column_width=True)
+
+    col_img, col_results = st.columns([1.2, 1])
+
+    with col_img:
+        st.image(image, caption="Uploaded Image", use_column_width=True)
 
     score, cnn_s, struct_s, embed_var = final_score(image)
     heatmap = generate_heatmap(image)
     img_hash = generate_hash(image)
 
-    col1, col2 = st.columns(2)
+    with col_results:
+        st.subheader("Risk Assessment")
+        st.metric("Manipulation Probability", score)
+        st.markdown(f"### {risk_badge(score)}")
 
-    with col1:
-        st.metric("Manipulation Risk", score)
+        st.markdown("#### Model Breakdown")
         st.write(f"CNN Feature Score: {round(cnn_s,3)}")
         st.write(f"Structural Score: {round(struct_s,3)}")
         st.write(f"Embedding Variance: {round(embed_var,6)}")
 
-    with col2:
-        st.write("Blockchain Evidence Hash")
+    st.divider()
+
+    col_heatmap, col_hash = st.columns(2)
+
+    with col_heatmap:
+        st.subheader("Anomaly Visualization")
+        fig, ax = plt.subplots()
+        ax.imshow(heatmap, cmap="inferno")
+        ax.axis("off")
+        st.pyplot(fig)
+
+    with col_hash:
+        st.subheader("Blockchain Evidence Anchor")
         st.code(img_hash)
 
-    st.subheader("Anomaly Visualization")
-    fig, ax = plt.subplots()
-    ax.imshow(heatmap, cmap="inferno")
-    ax.axis("off")
-    st.pyplot(fig)
+st.divider()
 
-st.caption("Hybrid CNN-Forensic MVP. Production integrates GAN fingerprint training and FaceForensics++ fine-tuning.")
+st.caption("""
+MVP Hybrid Model.
+Production system integrates GAN fingerprint training, FaceForensics++ fine-tuning,
+and DAO-based validation consensus.
+""")
