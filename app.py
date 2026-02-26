@@ -6,7 +6,7 @@ import hashlib
 import matplotlib.pyplot as plt
 
 # -----------------------------
-# Image Forensics Engine
+# AGGRESSIVE Image Forensics Engine
 # -----------------------------
 def analyze_image(image):
     img_array = np.array(image)
@@ -16,17 +16,18 @@ def analyze_image(image):
     else:
         gray = img_array
 
+    # Core spatial metrics
     variance = np.var(gray)
     gradient = np.abs(np.diff(gray, axis=0)).mean()
     noise = np.std(gray)
 
-    # Frequency domain
+    # Frequency domain analysis
     fft = fftpack.fft2(gray)
     fft_shift = fftpack.fftshift(fft)
     magnitude = np.abs(fft_shift)
     high_freq_energy = np.mean(magnitude[30:-30, 30:-30])
 
-    # Saturation
+    # Saturation anomaly
     if len(img_array.shape) == 3:
         saturation = (
             np.std(img_array[:, :, 0]) +
@@ -36,20 +37,38 @@ def analyze_image(image):
     else:
         saturation = 0
 
-    # Local contrast
+    # Local contrast (compositing)
     local_contrast = np.mean(np.abs(np.diff(gray)))
 
     # Texture uniformity
     texture_uniformity = np.std(np.diff(gray, axis=1))
 
-    # Risk scoring
-    score = 0
-    if variance < 500: score += 0.15
-    if gradient < 3: score += 0.15
-    if high_freq_energy < 20: score += 0.15
-    if saturation > 200: score += 0.15
-    if local_contrast > 40: score += 0.2
-    if texture_uniformity < 5: score += 0.2
+    # -------------------------
+    # AGGRESSIVE Risk Scoring
+    # -------------------------
+    score = 0.25  # baseline suspicion (important)
+
+    if variance < 800:
+        score += 0.2
+
+    if gradient < 5:
+        score += 0.2
+
+    if high_freq_energy < 40:
+        score += 0.2
+
+    if saturation > 150:
+        score += 0.2
+
+    if local_contrast > 25:
+        score += 0.25
+
+    if texture_uniformity < 15:
+        score += 0.25
+
+    # Extra boost for extreme stylized composites
+    if local_contrast > 50 and saturation > 200:
+        score += 0.2
 
     final_score = round(min(score, 1), 3)
 
@@ -65,59 +84,50 @@ def analyze_image(image):
         "gray": gray
     }
 
-
 # -----------------------------
 # Visual Anomaly Heatmap
 # -----------------------------
 def generate_heatmap(gray):
-    # Compute gradient map
     gx = np.abs(np.diff(gray, axis=1))
     gy = np.abs(np.diff(gray, axis=0))
 
-    # Pad to original size
     gx = np.pad(gx, ((0,0),(0,1)), mode='constant')
     gy = np.pad(gy, ((0,1),(0,0)), mode='constant')
 
     anomaly_map = gx + gy
-
-    # Normalize
     anomaly_map = (anomaly_map - anomaly_map.min()) / (anomaly_map.max() - anomaly_map.min() + 1e-8)
 
     return anomaly_map
 
-
 # -----------------------------
-# Blockchain Hash
+# Blockchain Evidence Hash
 # -----------------------------
 def generate_hash(image):
     img_bytes = image.tobytes()
     return hashlib.sha256(img_bytes).hexdigest()
 
-
 # -----------------------------
 # Risk Label
 # -----------------------------
 def risk_label(score):
-    if score > 0.7:
+    if score > 0.75:
         return "🔴 HIGH MANIPULATION RISK"
-    elif score > 0.4:
+    elif score > 0.45:
         return "🟠 MEDIUM RISK"
     else:
         return "🟢 LOW RISK"
 
-
 # -----------------------------
-# Risk Gauge
+# Risk Gauge Visualization
 # -----------------------------
 def risk_gauge(score):
     fig, ax = plt.subplots(figsize=(4, 2))
-    color = "red" if score > 0.7 else "orange" if score > 0.4 else "green"
+    color = "red" if score > 0.75 else "orange" if score > 0.45 else "green"
     ax.barh(0, score, color=color)
     ax.set_xlim(0, 1)
     ax.set_yticks([])
     ax.set_title("Manipulation Probability")
     return fig
-
 
 # -----------------------------
 # Streamlit UI
@@ -125,9 +135,12 @@ def risk_gauge(score):
 st.set_page_config(page_title="VeriMarket – AI Image Forensics", layout="wide")
 
 st.title("🛡️ VeriMarket – AI Image Forensics Engine")
-st.markdown("Structural + Frequency + Visual Anomaly Detection (MVP).")
+st.markdown("""
+Advanced Structural + Frequency + Composite Detection  
+Enhanced sensitivity for geopolitical and market-risk manipulation scenarios.
+""")
 
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Upload an image for forensic analysis", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
 
@@ -151,7 +164,6 @@ if uploaded_file:
         st.code(image_hash)
 
     st.markdown("### 🔥 Visual Anomaly Heatmap")
-
     fig2, ax2 = plt.subplots()
     ax2.imshow(heatmap, cmap='hot')
     ax2.axis('off')
@@ -165,7 +177,7 @@ if uploaded_file:
     st.write(f"Local Contrast: {results['local_contrast']}")
     st.write(f"Texture Uniformity: {results['texture_uniformity']}")
 
-    st.info("In production, anomaly clusters are validated via CNN-based detection and recorded on-chain.")
+    st.info("In production, this evidence hash would be anchored on-chain for immutable verification and regulatory compliance.")
 
 st.markdown("---")
-st.caption("⚠️ MVP forensic engine. Production integrates GAN fingerprint detection + Oracle validation + DAO consensus.")
+st.caption("⚠️ MVP forensic model. Production system integrates CNN-based GAN fingerprint detection, oracle validation, and DAO consensus.")
