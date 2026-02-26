@@ -16,31 +16,57 @@ def analyze_image(image):
     else:
         gray = img_array
 
+    # Basic metrics
     variance = np.var(gray)
     gradient = np.abs(np.diff(gray, axis=0)).mean()
     noise = np.std(gray)
 
-    # Frequency domain
+    # Frequency analysis
     fft = fftpack.fft2(gray)
     fft_shift = fftpack.fftshift(fft)
     magnitude = np.abs(fft_shift)
-    high_freq_energy = np.mean(magnitude[20:-20, 20:-20])
+    high_freq_energy = np.mean(magnitude[30:-30, 30:-30])
 
-    # Color inconsistency
+    # Saturation anomaly
     if len(img_array.shape) == 3:
-        r_var = np.var(img_array[:, :, 0])
-        g_var = np.var(img_array[:, :, 1])
-        b_var = np.var(img_array[:, :, 2])
-        color_inconsistency = abs(r_var - g_var) + abs(g_var - b_var)
+        saturation = np.std(img_array[:, :, 0]) + np.std(img_array[:, :, 1]) + np.std(img_array[:, :, 2])
     else:
-        color_inconsistency = 0
+        saturation = 0
 
+    # Local contrast map
+    local_contrast = np.mean(np.abs(np.diff(gray)))
+
+    # Texture uniformity
+    texture_uniformity = np.std(np.diff(gray, axis=1))
+
+    # -------------------------
+    # Enhanced Risk Scoring
+    # -------------------------
     score = 0
-    if variance < 400: score += 0.2
-    if gradient < 4: score += 0.2
-    if noise < 15: score += 0.2
-    if high_freq_energy < 25: score += 0.2
-    if color_inconsistency < 500: score += 0.2
+
+    # Too smooth (AI smoothing)
+    if variance < 500:
+        score += 0.15
+
+    # Unrealistic edge consistency
+    if gradient < 3:
+        score += 0.15
+
+    # Suspicious frequency suppression
+    if high_freq_energy < 20:
+        score += 0.15
+
+    # Artificial saturation patterns
+    if saturation > 200:
+        score += 0.15
+
+    # Excessive local contrast (compositing)
+    if local_contrast > 40:
+        score += 0.2
+
+    # Texture anomalies
+    if texture_uniformity < 5:
+        score += 0.2
 
     final_score = round(min(score, 1), 3)
 
@@ -50,7 +76,9 @@ def analyze_image(image):
         "gradient": round(gradient, 2),
         "noise": round(noise, 2),
         "frequency": round(high_freq_energy, 2),
-        "color_inconsistency": round(color_inconsistency, 2)
+        "saturation": round(saturation, 2),
+        "local_contrast": round(local_contrast, 2),
+        "texture_uniformity": round(texture_uniformity, 2)
     }
 
 # -----------------------------
